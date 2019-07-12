@@ -21,7 +21,7 @@ def detect_face(img, cascade):
     # Detect faces
     faces = cascade.detectMultiScale(
         img_grey,
-        scaleFactor = 1.1,  # Need to experiment with this value depending on camera
+        scaleFactor = 1.3,  # Need to experiment with this value depending on camera
         minNeighbors = 5
     )
 
@@ -107,6 +107,9 @@ def nothing(x):
 
 def main():
     cap = cv2.VideoCapture(0)  # Camera capture
+    # Set webcam to 480p for higher fps and faster processing
+    cap.set(3, 640)
+    cap.set(4, 480)
     cv2.namedWindow("Webcam capture")
     cv2.createTrackbar("Threshold", "Webcam capture", 0, 255, nothing)
 
