@@ -1,4 +1,5 @@
 # Adapted from https://medium.com/@stepanfilonov/tracking-your-eyes-with-python-3952e66194a6
+# and https://pysource.com/2019/01/04/eye-motion-tracking-opencv-with-python/
 
 import cv2
 import numpy as np
@@ -15,14 +16,15 @@ detector = cv2.SimpleBlobDetector_create(detector_params)
 
 # Detect face
 def detect_face(img, cascade):
-    # Make image frame grey
+    # Make image frame grey and apply gaussian blur
     img_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img_grey = cv2.GaussianBlur(img_grey, (7, 7), 0)
 
     # Detect faces
     faces = cascade.detectMultiScale(
         img_grey,
-        scaleFactor = 1.3,  # Need to experiment with this value depending on camera
-        minNeighbors = 5
+        scaleFactor = 1.3,  # Adjust depending on camera
+        minNeighbors = 5  # Adjust depending on camera
     )
 
     # Only return largest face frame to mitigate false detections
@@ -44,14 +46,15 @@ def detect_face(img, cascade):
 
 # Detect eyes
 def detect_eyes(img, cascade):
-    # Make image frame grey
+    # Make image frame grey and apply gaussian blur
     img_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img_grey = cv2.GaussianBlur(img_grey, (7, 7), 0)
 
     # Detect eyes
     eyes = cascade.detectMultiScale(
         img_grey,
-        scaleFactor = 1.3,  # Need to experiment with this value depending on camera
-        minNeighbors = 5
+        scaleFactor = 1.3,  # Adjust depending on camera
+        minNeighbors = 10  # Adjust depending on camera
     )
 
     # Get face frame width and height
@@ -98,7 +101,7 @@ def blob_process(img, threshold, detector):
     img = cv2.medianBlur(img, 5)
 
     keypoints = detector.detect(img)
-    return keypoints
+    return img, keypoints
 
 # Trackbar requires a function to happen on every movement
 # Create a function that does nothing
@@ -107,9 +110,6 @@ def nothing(x):
 
 def main():
     cap = cv2.VideoCapture(0)  # Camera capture
-    # Set webcam to 480p for higher fps and faster processing
-    cap.set(3, 640)
-    cap.set(4, 480)
     cv2.namedWindow("Webcam capture")
     cv2.createTrackbar("Threshold", "Webcam capture", 0, 255, nothing)
 
@@ -123,7 +123,8 @@ def main():
                     threshold = cv2.getTrackbarPos("Threshold", "Webcam capture")
                     eye = cut_eyebrows(eye)  # Cut out eyebrows from eye frame
                     keypoints = blob_process(eye, threshold, detector)
-                    eye = cv2.drawKeypoints(eye, keypoints, eye, (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                    cv2.imshow("yeet", keypoints[0])
+                    eye = cv2.drawKeypoints(eye, keypoints[1], eye, (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
         
         cv2.imshow("Webcam capture", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
