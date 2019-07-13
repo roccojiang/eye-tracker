@@ -14,8 +14,17 @@ detector_params.filterByArea = True
 detector_params.maxArea = 1500  # Area filtering for better results
 detector = cv2.SimpleBlobDetector_create(detector_params)
 
-# Detect face
 def detect_face(img, cascade):
+    '''
+    Detects all faces from an image and works with the largest face frame.
+
+    Args:
+        img: Input image frame.
+        cascade: Haar cascade.
+    
+    Returns:
+        The largest face frame.
+    '''
     # Make image frame grey and apply gaussian blur
     img_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_grey = cv2.GaussianBlur(img_grey, (7, 7), 0)
@@ -44,8 +53,17 @@ def detect_face(img, cascade):
     
     return frame
 
-# Detect eyes
 def detect_eyes(img, cascade):
+    '''
+    Detects eyes from a face frame.
+
+    Args:
+        img: Input face frame.
+        cascade: Haar cascade.
+    
+    Returns:
+        Tuple consisting of left eye frame and right eye frame.
+    '''
     # Make image frame grey and apply gaussian blur
     img_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_grey = cv2.GaussianBlur(img_grey, (7, 7), 0)
@@ -77,16 +95,28 @@ def detect_eyes(img, cascade):
     
     return left_eye, right_eye
 
-# Cut our eyebrows from eye frame
 def cut_eyebrows(img):
+    '''
+    Cut out the eyebrows from an eye frame.
+    '''
     height, width = img.shape[:2]
     eyebrow_h = int(height / 4)  # Eyebrows take up ~25% of image starting from top
     img = img[eyebrow_h: height, 0: width]  # Cut eyebrows out
 
     return img
 
-# Detect and draw blobs on frames
 def blob_process(img, threshold, detector):
+    '''
+    Detect and draw blobs on frames.
+
+    Args:
+        img: Input eye frame.
+        threshold: Threshold value for binary thresholding.
+        detector: SimpleBlobDetector object to extract blobs from.
+    
+    Returns:
+        Tuple consisting of processed pupil image and detected blob keypoints.
+    '''
     frame_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     _, img = cv2.threshold(
         frame_grey,
