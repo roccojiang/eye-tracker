@@ -113,6 +113,8 @@ def main():
     cv2.namedWindow("Webcam capture")
     cv2.createTrackbar("Threshold", "Webcam capture", 0, 255, nothing)
 
+    cv2.namedWindow("Debug")  # Debug window that currently shows a random pupil after blob processing
+
     while True:
         _, frame = cap.read()  # _ is a throwaway variable
         face_frame = detect_face(frame, face_cascade)
@@ -122,9 +124,9 @@ def main():
                 if eye is not None:  # Prevent crash if eye not detected
                     threshold = cv2.getTrackbarPos("Threshold", "Webcam capture")
                     eye = cut_eyebrows(eye)  # Cut out eyebrows from eye frame
-                    keypoints = blob_process(eye, threshold, detector)
-                    cv2.imshow("yeet", keypoints[0])
-                    eye = cv2.drawKeypoints(eye, keypoints[1], eye, (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                    blobs = blob_process(eye, threshold, detector)
+                    cv2.imshow("Debug", blobs[0])  # Show processed image of pupil after blob processing for debugging
+                    eye = cv2.drawKeypoints(eye, blobs[1], eye, (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
         
         cv2.imshow("Webcam capture", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
