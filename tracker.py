@@ -1,165 +1,53 @@
-# Adapted from https://medium.com/@stepanfilonov/tracking-your-eyes-with-python-3952e66194a6
-# and https://pysource.com/2019/01/04/eye-motion-tracking-opencv-with-python/
+# Code adapted from: 
+# https://pysource.com/2019/01/07/eye-detection-gaze-controlled-keyboard-with-python-and-opencv/
 
 import cv2
 import numpy as np
+import dlib
 
-# Initialise haar cascade classifiers
-face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
-eye_cascade = cv2.CascadeClassifier("haarcascade_eye.xml")
+# Initialise face detector and landmark predictor
+detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
-# Initialise blob detection algorithm
-detector_params = cv2.SimpleBlobDetector_Params()
-detector_params.filterByArea = True
-detector_params.maxArea = 1500  # Area filtering for better results
-detector = cv2.SimpleBlobDetector_create(detector_params)
-
-def detect_face(img, cascade):
+def midpoint(p1, p2):
     '''
-    Detects all faces from an image and works with the largest face frame.
-
-    Args:
-        img: Input image frame.
-        cascade: Haar cascade.
-    
-    Returns:
-        The largest face frame.
+    Find the midpoint between two coordinates.
     '''
-    # Make image frame grey and apply gaussian blur
-    img_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img_grey = cv2.GaussianBlur(img_grey, (7, 7), 0)
-
-    # Detect faces
-    faces = cascade.detectMultiScale(
-        img_grey,
-        scaleFactor = 1.3,  # Adjust depending on camera
-        minNeighbors = 5  # Adjust depending on camera
-    )
-
-    # Only return largest face frame to mitigate false detections
-    if len(faces) > 1:
-        largest = (0, 0, 0, 0)
-        for i in faces:
-            if i[3] > largest[3]:
-                largest = i
-        largest = np.array([i], np.int32)
-    elif len(faces) == 1:
-        largest = faces
-    else:
-        return None
-    for (x, y, w, h) in largest:
-        cv2.rectangle(img, (x, y), (x + w, y + h), (255,255,0), 2)  # TEMPORARY CODE draw a rectangle around face
-        frame = img[y: y + h, x: x + w]
-    
-    return frame
-
-def detect_eyes(img, cascade):
-    '''
-    Detects eyes from a face frame.
-
-    Args:
-        img: Input face frame.
-        cascade: Haar cascade.
-    
-    Returns:
-        Tuple consisting of left eye frame and right eye frame.
-    '''
-    # Make image frame grey and apply gaussian blur
-    img_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img_grey = cv2.GaussianBlur(img_grey, (7, 7), 0)
-
-    # Detect eyes
-    eyes = cascade.detectMultiScale(
-        img_grey,
-        scaleFactor = 1.3,  # Adjust depending on camera
-        minNeighbors = 10  # Adjust depending on camera
-    )
-
-    # Get face frame width and height
-    width = np.size(img, 1)
-    height = np.size(img, 0)
-
-    # Pre-define left and right eye variables in case they are not found
-    left_eye = None
-    right_eye = None
-
-    for (x, y, w, h) in eyes:
-        cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 255), 2)  # TEMPORARY CODE draw a rectangle around eyes
-        if y > height / 2:  # pass if eye is at bottom
-            pass
-        eye_centre = x + w / 2
-        if eye_centre < width * 0.5:
-            left_eye = img[y: y + h, x: x + w]
-        else:
-            right_eye = img[y: y + h, x: x + w]
-    
-    return left_eye, right_eye
-
-def cut_eyebrows(img):
-    '''
-    Cut out the eyebrows from an eye frame.
-    '''
-    height, width = img.shape[:2]
-    eyebrow_h = int(height / 4)  # Eyebrows take up ~25% of image starting from top
-    img = img[eyebrow_h: height, 0: width]  # Cut eyebrows out
-
-    return img
-
-def blob_process(img, threshold, detector):
-    '''
-    Detect and draw blobs on frames.
-
-    Args:
-        img: Input eye frame.
-        threshold: Threshold value for binary thresholding.
-        detector: SimpleBlobDetector object to extract blobs from.
-    
-    Returns:
-        Tuple consisting of processed pupil image and detected blob keypoints.
-    '''
-    frame_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    _, img = cv2.threshold(
-        frame_grey,
-        thresh = threshold,
-        maxval = 255,
-        type = cv2.THRESH_BINARY
-    )  # _ is a throwaway variable
-    
-    # Reduce 'noise'
-    img = cv2.erode(img, None, iterations = 2)
-    img = cv2.dilate(img, None, iterations = 4)
-    img = cv2.medianBlur(img, 5)
-
-    keypoints = detector.detect(img)
-    return img, keypoints
-
-# Trackbar requires a function to happen on every movement
-# Create a function that does nothing
-def nothing(x):
-    pass
+    return int((p1.x + p2.x) / 2), int((p1.y + p2.y) / 2)
 
 def main():
     cap = cv2.VideoCapture(0)  # Camera capture
-    cv2.namedWindow("Webcam capture")
-    cv2.createTrackbar("Threshold", "Webcam capture", 0, 255, nothing)
-
-    cv2.namedWindow("Debug")  # Debug window that currently shows a random pupil after blob processing
 
     while True:
         _, frame = cap.read()  # _ is a throwaway variable
-        face_frame = detect_face(frame, face_cascade)
-        if face_frame is not None:  # Prevent crash if face not detected
-            eyes = detect_eyes(face_frame, eye_cascade)
-            for eye in eyes:
-                if eye is not None:  # Prevent crash if eye not detected
-                    threshold = cv2.getTrackbarPos("Threshold", "Webcam capture")
-                    eye = cut_eyebrows(eye)  # Cut out eyebrows from eye frame
-                    blobs = blob_process(eye, threshold, detector)
-                    cv2.imshow("Debug", blobs[0])  # Show processed image of pupil after blob processing for debugging
-                    eye = cv2.drawKeypoints(eye, blobs[1], eye, (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+        grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        faces = detector(grey)
+        for face in faces:
+            # Find face landmarks
+            landmarks = predictor(grey, face)
+
+            # Left eye
+            leye_left_point = (landmarks.part(36).x, landmarks.part(36).y)  # Left point of left eye at point 36
+            leye_right_point = (landmarks.part(39).x, landmarks.part(39).y)  # Right point of left eye at point 39
+            leye_centre_top = midpoint(landmarks.part(37), landmarks.part(38))  # Midpoint of top of left eye between points 37 and 38
+            leye_centre_bottom = midpoint(landmarks.part(41), landmarks.part(40))  # Midpoint of bottom of left eye between points 41 and 40
+
+            leye_hor_line = cv2.line(frame, leye_left_point, leye_right_point, (0, 255, 0), 2)
+            leye_ver_line = cv2.line(frame, leye_centre_top, leye_centre_bottom, (0, 255, 0), 2)
+
+            # Right eye
+            reye_left_point = (landmarks.part(42).x, landmarks.part(42).y)  # Left point of right eye at point 42
+            reye_right_point = (landmarks.part(45).x, landmarks.part(45).y)  # Right point of right eye at point 45
+            reye_centre_top = midpoint(landmarks.part(43), landmarks.part(44))  # Midpoint of top of right eye between points 43 and 44
+            reye_centre_bottom = midpoint(landmarks.part(47), landmarks.part(46))  # Midpoint of bottom of right eye between points 47 and 46
+
+            reye_hor_line = cv2.line(frame, reye_left_point, reye_right_point, (255, 255, 0), 2)
+            reye_ver_line = cv2.line(frame, reye_centre_top, reye_centre_bottom, (255, 255, 0), 2)
         
         cv2.imshow("Webcam capture", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+
+        if cv2.waitKey(1) == 27:  # Esc
             break
         
     cap.release()
