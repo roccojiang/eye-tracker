@@ -4,7 +4,9 @@
 A project by Fabian Yiu and Rocco Jiang that may or may not work in the end.
 
 ## Requirements
-- Python 3
+- Python 3.7+
 - OpenCV 3.4+
+- imutils (https://github.com/jrosebr1/imutils)
+- SciPy 0.14+
 - NumPy 1.15.2+
-- Dlib 19.17+
+- dlib 19.17+
