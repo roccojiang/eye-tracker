@@ -11,8 +11,8 @@ import numpy as np
 import dlib
 
 # Constants
-# Eye aspect ratio to indicate a blink - adjust if necessary
-EYE_AR_THRESH = 0.23  # Rocco - 0.23 for intentional blinks (ugh why are my eyes so small)
+# Default eye aspect ratio to indicate a blink - adjust if necessary
+EYE_AR_THRESH = 0.25  # For Rocco: ~0.25 for intentional blinks (ugh why are my eyes so small)
 # Number of consecutive frames the eye must be below threshold
 EYE_AR_CONSEC_FRAMES = 3
 
@@ -83,17 +83,28 @@ def draw_eye(frame, eye):
     cv2.line(frame, left_point, right_point, (255, 255, 0), 1)  # Horizontal line through left and right points
     cv2.line(frame, centre_top, centre_bottom, (255, 255, 0), 1)  # Vertical line through top and bottom midpoints
 
+# Trackbar requires a function to happen on every movement
+# So this function does nothing
+def nothing(x):
+    pass
+
 def main():
     # Initialise frame counter and total number of blinks
     COUNT = 0
     TOTAL = 0
 
     cap = cv2.VideoCapture(0)  # Camera capture
+    cv2.namedWindow("Webcam capture")
+    cv2.createTrackbar("Threshold", "Webcam capture", 25, 40, nothing)
 
     while True:
         _, frame = cap.read()  # _ is a throwaway variable
         frame = imutils.resize(frame, width=720)  # Downsize window to significantly reduce lag
         grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Trackbar to change eye aspect ratio threshold value
+        # OpenCV only allows integer values so everything is multiplied by 100
+        EYE_AR_THRESH = cv2.getTrackbarPos("Threshold", "Webcam capture") / 100.0
 
         faces = detector(grey)
         for face in faces:
