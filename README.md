@@ -7,3 +7,4 @@ A project by Fabian Yiu and Rocco Jiang that may or may not work in the end.
 - Python 3
 - OpenCV 3.4+
 - NumPy 1.15.2+
+- Dlib 19.17+
