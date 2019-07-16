@@ -61,6 +61,36 @@ def eye_aspect_ratio(eye):
     ear = (A + B) / (C * 2.0)
     return ear
 
+def gaze_ratio(frame, grey, eye):
+    eye_region = np.array([(eye[0][0], eye[0][1]),
+                           (eye[1][0], eye[1][1]),
+                           (eye[2][0], eye[2][1]),
+                           (eye[3][0], eye[3][1]),
+                           (eye[4][0], eye[4][1]),
+                           (eye[5][0], eye[5][1])], dtype=np.int32)
+
+    # Create mask of inside of eye and exclude surroundings
+    height, width, _ = frame.shape
+    mask = np.zeros((height, width), np.uint8)
+    cv2.polylines(mask, [eye_region], True, 255, 2)
+    cv2.fillPoly(mask, [eye_region], 255)
+    eye_mask = cv2.bitwise_and(grey, grey, mask=mask)
+
+    # Cut out rectangular shape using the extreme points of the eye
+    min_x = np.min(eye_region[:, 0])
+    max_x = np.max(eye_region[:, 0])
+    min_y = np.min(eye_region[:, 1])
+    max_y = np.max(eye_region[:, 1])
+    grey_eye = eye_mask[min_y: max_y, min_x: max_x]
+    _, threshold_eye = cv2.threshold(grey_eye, 70, 255, cv2.THRESH_BINARY)
+
+    # Display
+    threshold_eye = cv2.resize(threshold_eye, None, fx=5, fy=5)
+    eye_img = cv2.resize(grey_eye, None, fx=5, fy=5)
+    cv2.imshow("Eye", eye_img)
+    cv2.imshow("Threshold", threshold_eye)
+    cv2.imshow("Eye mask", eye_mask)
+
 def draw_eye(frame, eye):
     '''
     Draw detected eyes onto the frame.
@@ -126,6 +156,8 @@ def main():
             # Draw eyes
             draw_eye(frame, left_eye)
             draw_eye(frame, right_eye)
+
+            gaze_ratio(frame, grey, left_eye)
 
             # Increment blink frame counter if eye aspect ratio is below threshold
             if ear < EYE_AR_THRESH:
