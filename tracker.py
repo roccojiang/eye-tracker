@@ -61,7 +61,16 @@ def eye_aspect_ratio(eye):
     ear = (A + B) / (C * 2.0)
     return ear
 
-def gaze_ratio(frame, grey, eye):
+def gaze_ratio(eye):
+    '''
+    Computes the gaze ratio between the white pixels in the left and right half of the eye.
+
+    Args:
+        eye: Array of 6 integers specifying the facial landmark coordinates for a given eye.
+    
+    Returns:
+        The gaze ratio as a float.
+    '''
     eye_region = np.array([(eye[0][0], eye[0][1]),
                            (eye[1][0], eye[1][1]),
                            (eye[2][0], eye[2][1]),
@@ -81,15 +90,27 @@ def gaze_ratio(frame, grey, eye):
     max_x = np.max(eye_region[:, 0])
     min_y = np.min(eye_region[:, 1])
     max_y = np.max(eye_region[:, 1])
-    grey_eye = eye_mask[min_y: max_y, min_x: max_x]
-    _, threshold_eye = cv2.threshold(grey_eye, 70, 255, cv2.THRESH_BINARY)
 
-    # Display
-    threshold_eye = cv2.resize(threshold_eye, None, fx=5, fy=5)
-    eye_img = cv2.resize(grey_eye, None, fx=5, fy=5)
-    cv2.imshow("Eye", eye_img)
-    cv2.imshow("Threshold", threshold_eye)
-    cv2.imshow("Eye mask", eye_mask)
+    # Process image
+    grey_eye = eye_mask[min_y: max_y, min_x: max_x]
+    _, processed_eye = cv2.threshold(grey_eye, 70, 255, cv2.THRESH_BINARY)
+    height, width = processed_eye.shape
+
+    # Count white pixels on left and right side of eye
+    left_side_threshold = processed_eye[0:height, 0:int(width/2)]
+    left_side_white = cv2.countNonZero(left_side_threshold)
+    right_side_threshold = processed_eye[0:height, int(width/2):width]
+    right_side_white = cv2.countNonZero(right_side_threshold)
+
+    # Calculate gaze ratio
+    if left_side_white == 0:
+        gaze_ratio = 1
+    elif right_side_white == 0:
+        gaze_ratio = 5
+    else:
+        gaze_ratio = left_side_white / right_side_white
+
+    return gaze_ratio
 
 def draw_eye(frame, eye):
     '''
@@ -157,7 +178,12 @@ def main():
             draw_eye(frame, left_eye)
             draw_eye(frame, right_eye)
 
-            gaze_ratio(frame, grey, left_eye)
+            # Compute gaze ratio for both eyes
+            left_gr = gaze_ratio(left_eye)
+            right_gr = gaze_ratio(right_eye)
+
+            # Find total gaze ratio as an average of both eyes
+            gr = (left_gr + right_gr) / 2.0
 
             # Increment blink frame counter if eye aspect ratio is below threshold
             if ear < EYE_AR_THRESH:
@@ -168,9 +194,18 @@ def main():
                     TOTAL += 1
                 COUNT = 0  # Reset blink frame counter
             
-            # Display total number of blinks and computed eye aspect ratio
+            # Display total number of blinks, eye aspect ratio, and gaze ratio
             cv2.putText(frame, f"Blinks: {TOTAL}", (10, 30), font, 1, (0, 0, 255), 2)
             cv2.putText(frame, f"EAR: {ear:.2f}", (300, 30), font, 1, (0, 0, 255), 2)
+            cv2.putText(frame, f"Gaze ratio: {gr:.2f}", (300, 60), font, 1, (0, 0, 255), 2)
+
+            # Gaze detection
+            if gr <= 0.5:  # Need to ajust threshold
+                cv2.putText(frame, "RIGHT", (50, 100), font, 2, (0, 0, 255), 3)
+            elif 0.5 < gr < 1.7:  # Need to adjust threshold
+                cv2.putText(frame, "CENTER", (50, 100), font, 2, (0, 0, 255), 3)
+            else:
+                cv2.putText(frame, "LEFT", (50, 100), font, 2, (0, 0, 255), 3)
 
         cv2.imshow("Webcam capture", frame)
 
