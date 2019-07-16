@@ -61,11 +61,13 @@ def eye_aspect_ratio(eye):
     ear = (A + B) / (C * 2.0)
     return ear
 
-def gaze_ratio(eye):
+def gaze_ratio(frame, grey, eye):
     '''
     Computes the gaze ratio between the white pixels in the left and right half of the eye.
 
     Args:
+        frame: Frame to create eye mask from.
+        grey: Grey frame to create eye mask from.
         eye: Array of 6 integers specifying the facial landmark coordinates for a given eye.
     
     Returns:
@@ -179,8 +181,8 @@ def main():
             draw_eye(frame, right_eye)
 
             # Compute gaze ratio for both eyes
-            left_gr = gaze_ratio(left_eye)
-            right_gr = gaze_ratio(right_eye)
+            left_gr = gaze_ratio(frame, grey, left_eye)
+            right_gr = gaze_ratio(frame, grey, right_eye)
 
             # Find total gaze ratio as an average of both eyes
             gr = (left_gr + right_gr) / 2.0
@@ -192,20 +194,22 @@ def main():
                 # Increment total number of blinks if eyes closed for a sufficient number of frames
                 if COUNT >= EYE_AR_CONSEC_FRAMES:
                     TOTAL += 1
+                    cv2.putText(frame, "BLINK", (30, 100), font, 2, (0, 0, 255), 3)
+                
+                # Gaze detection
+                elif gr <= 0.7:  # Need to ajust threshold
+                    cv2.putText(frame, "RIGHT", (30, 100), font, 2, (0, 0, 255), 3)
+                elif 0.7 < gr < 1.5:  # Need to adjust threshold
+                    cv2.putText(frame, "CENTER", (30, 100), font, 2, (0, 0, 255), 3)
+                else:
+                    cv2.putText(frame, "LEFT", (30, 100), font, 2, (0, 0, 255), 3)
+
                 COUNT = 0  # Reset blink frame counter
             
             # Display total number of blinks, eye aspect ratio, and gaze ratio
             cv2.putText(frame, f"Blinks: {TOTAL}", (10, 30), font, 1, (0, 0, 255), 2)
             cv2.putText(frame, f"EAR: {ear:.2f}", (300, 30), font, 1, (0, 0, 255), 2)
             cv2.putText(frame, f"Gaze ratio: {gr:.2f}", (300, 60), font, 1, (0, 0, 255), 2)
-
-            # Gaze detection
-            if gr <= 0.5:  # Need to ajust threshold
-                cv2.putText(frame, "RIGHT", (50, 100), font, 2, (0, 0, 255), 3)
-            elif 0.5 < gr < 1.7:  # Need to adjust threshold
-                cv2.putText(frame, "CENTER", (50, 100), font, 2, (0, 0, 255), 3)
-            else:
-                cv2.putText(frame, "LEFT", (50, 100), font, 2, (0, 0, 255), 3)
 
         cv2.imshow("Webcam capture", frame)
 
