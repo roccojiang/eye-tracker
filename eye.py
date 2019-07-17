@@ -68,10 +68,11 @@ class Eye(object):
         eye_mask = cv2.bitwise_and(self.grey, self.grey, mask=mask)
 
         # Cut out rectangular shape using the extreme points of the eye
-        min_x = np.min(eye_region[:, 0])
-        max_x = np.max(eye_region[:, 0])
-        min_y = np.min(eye_region[:, 1])
-        max_y = np.max(eye_region[:, 1])
+        margin = 3
+        min_x = np.min(eye_region[:, 0]) - margin
+        max_x = np.max(eye_region[:, 0]) + margin
+        min_y = np.min(eye_region[:, 1]) - margin
+        max_y = np.max(eye_region[:, 1]) + margin
 
         # Process image
         grey_eye = eye_mask[min_y: max_y, min_x: max_x]
