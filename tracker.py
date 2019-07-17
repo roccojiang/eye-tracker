@@ -1,14 +1,13 @@
 # Code adapted from: 
 # https://pysource.com/2019/01/07/eye-detection-gaze-controlled-keyboard-with-python-and-opencv/
 # https://www.pyimagesearch.com/2017/04/24/eye-blink-detection-opencv-python-dlib/
+# https://github.com/rj14ng/eye-tracking-car
 
-from scipy.spatial import distance
-from math import hypot
 from imutils import face_utils
 import cv2
 import imutils
-import numpy as np
 import dlib
+from eye import Eye
 
 # Constants
 # Number of consecutive frames the eye must be below threshold
@@ -24,131 +23,6 @@ predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
 # Load text font
 font = cv2.FONT_HERSHEY_SIMPLEX
-
-def midpoint(p1, p2):
-    '''
-    Find the midpoint between two coordinates.
-
-    Args:
-        p1: First coordinate point as a NumPy array.
-        p2: Second coordinate point as a NumPy array.
-    
-    Returns:
-        The midpoint between the two coordinates as a tuple.
-    '''
-    return int((p1[0] + p2[0]) / 2), int((p1[1] + p2[1]) / 2)  # (x, y)
-
-def eye_aspect_ratio(eye):
-    '''
-    Computes the eye aspect ratio as defined in Soukupová and Čech, 2016
-
-    Args:
-        eye: Array of 6 integers specifying the facial landmark coordinates for a given eye.
-    
-    Returns:
-        The eye aspect ratio as a float.
-    '''
-    # Compute euclidean distances between two sets of vertical eye landmarks
-    A = distance.euclidean(eye[1], eye[5])
-    B = distance.euclidean(eye[2], eye[4])
-
-    # Compute euclidean distance between horizontal eye landmark
-    C = distance.euclidean(eye[0], eye[3])
-
-    # Compute and return eye aspect ratio
-    ear = (A + B) / (C * 2.0)
-    return ear
-
-def isolate(frame, grey, eye, threshold):
-    '''
-    Isolates an eye from a face frame.
-
-    Args:
-        frame: Frame to create eye mask from.
-        grey: Grey frame to create eye mask from.
-        eye: Array of 6 integers specifying the facial landmark coordinates for a given eye.
-        threshold: Threshold value to create binary image.
-    
-    Returns:
-        An eye frame.
-    '''
-    eye_region = np.array([(eye[0][0], eye[0][1]),
-                           (eye[1][0], eye[1][1]),
-                           (eye[2][0], eye[2][1]),
-                           (eye[3][0], eye[3][1]),
-                           (eye[4][0], eye[4][1]),
-                           (eye[5][0], eye[5][1])], dtype=np.int32)
-
-    # Create mask of inside of eye and exclude surroundings
-    height, width, _ = frame.shape
-    mask = np.zeros((height, width), np.uint8)
-    cv2.polylines(mask, [eye_region], True, 255, 2)
-    cv2.fillPoly(mask, [eye_region], 255)
-    eye_mask = cv2.bitwise_and(grey, grey, mask=mask)
-
-    # Cut out rectangular shape using the extreme points of the eye
-    min_x = np.min(eye_region[:, 0])
-    max_x = np.max(eye_region[:, 0])
-    min_y = np.min(eye_region[:, 1])
-    max_y = np.max(eye_region[:, 1])
-
-    # Process image
-    grey_eye = eye_mask[min_y: max_y, min_x: max_x]
-    _, processed_eye = cv2.threshold(grey_eye, threshold, 255, cv2.THRESH_BINARY)
-
-    return processed_eye
-
-def gaze_ratio(processed_eye):
-    '''
-    Computes the gaze ratio between the white pixels in the left and right half of the eye.
-
-    Args:
-        processed_eye: An eye frame returned from the isolate() method.
-    
-    Returns:
-        The gaze ratio as a float.
-    '''
-
-    # Find height and width
-    height, width = processed_eye.shape
-
-    # Count white pixels on left and right side of eye
-    left_side_threshold = processed_eye[0:height, 0:int(width/2)]
-    left_side_white = cv2.countNonZero(left_side_threshold)
-    right_side_threshold = processed_eye[0:height, int(width/2):width]
-    right_side_white = cv2.countNonZero(right_side_threshold)
-
-    # Calculate gaze ratio
-    if left_side_white == 0:
-        gaze_ratio = 1
-    elif right_side_white == 0:
-        gaze_ratio = 5
-    else:
-        gaze_ratio = left_side_white / right_side_white
-
-    return gaze_ratio
-
-def draw_eye(frame, eye):
-    '''
-    Draw detected eyes onto the frame.
-
-    Args:
-        frame: Frame to draw onto.
-        eye: Array of 6 integers specifying the facial landmark coordinates for a given eye.
-    '''
-    # Compute eye hull and draw contours
-    eye_hull = cv2.convexHull(eye)
-    cv2.drawContours(frame, [eye_hull], -1, (0, 255, 0), 1)
-
-    # Express left, right, top centre, and bottom centre coordinates as tuples
-    left_point = (eye[0][0], eye[0][1])
-    right_point = (eye[3][0], eye[3][1])
-    centre_top = midpoint(eye[1], eye[2])
-    centre_bottom = midpoint(eye[5], eye[4])
-
-    # Draw horizontal and vertical lines over eye
-    cv2.line(frame, left_point, right_point, (255, 255, 0), 1)  # Horizontal line through left and right points
-    cv2.line(frame, centre_top, centre_bottom, (255, 255, 0), 1)  # Vertical line through top and bottom midpoints
 
 # Trackbar requires a function to happen on every movement
 # So this function does nothing
@@ -187,29 +61,33 @@ def main():
             landmarks = face_utils.shape_to_np(landmarks)
 
             # Extract left and right eye coordinates
-            left_eye = landmarks[l_start:l_end]
-            right_eye = landmarks[r_start:r_end]
+            left_eye_coords = landmarks[l_start:l_end]
+            right_eye_coords = landmarks[r_start:r_end]
+
+            # Initialise left and right eye objects
+            left_eye = Eye(frame, left_eye_coords)
+            right_eye = Eye(frame, right_eye_coords)
             
             # Compute eye aspect ratio for both eyes
-            left_ear = eye_aspect_ratio(left_eye)
-            right_ear = eye_aspect_ratio(right_eye)
+            left_ear = left_eye.eye_aspect_ratio()
+            right_ear = right_eye.eye_aspect_ratio()
 
             # Find total eye aspect ratio as an average of both eyes
             ear = (left_ear + right_ear) / 2.0
 
             # Draw detected eye outlines onto face frame
-            draw_eye(frame, left_eye)
-            draw_eye(frame, right_eye)
+            left_eye.draw()
+            right_eye.draw()
 
             # Isolate eyes and show binary images in separate windows
-            left_eye_frame = isolate(frame, grey, left_eye, BINAR_THRESH)
-            right_eye_frame = isolate(frame, grey, right_eye, BINAR_THRESH)
+            left_eye_frame = left_eye.isolate(BINAR_THRESH)
+            right_eye_frame = right_eye.isolate(BINAR_THRESH)
             cv2.imshow("left eye", left_eye_frame)
             cv2.imshow("right eye", right_eye_frame)
 
             # Compute gaze ratio for both eyes
-            left_gr = gaze_ratio(left_eye_frame)
-            right_gr = gaze_ratio(right_eye_frame)
+            left_gr = left_eye.gaze_ratio(left_eye_frame)
+            right_gr = right_eye.gaze_ratio(right_eye_frame)
 
             # Find total gaze ratio as an average of both eyes
             gr = (left_gr + right_gr) / 2.0
