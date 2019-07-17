@@ -10,3 +10,8 @@ A project by Fabian Yiu and Rocco Jiang that may or may not work in the end.
 - SciPy 0.14+
 - NumPy 1.15.2+
 - dlib 19.17+
+
+## Guide
+To run:
+
+`python3 tracker.py`
