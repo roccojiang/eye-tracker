@@ -11,10 +11,8 @@ import numpy as np
 import dlib
 
 # Constants
-# Default eye aspect ratio to indicate a blink - adjust if necessary
-EYE_AR_THRESH = 0.25  # For Rocco: ~0.25 for intentional blinks (ugh why are my eyes so small)
 # Number of consecutive frames the eye must be below threshold
-EYE_AR_CONSEC_FRAMES = 3
+EAR_CONSEC_FRAMES = 3
 
 # Initialise face detector and landmark predictor
 detector = dlib.get_frontal_face_detector()
@@ -61,17 +59,18 @@ def eye_aspect_ratio(eye):
     ear = (A + B) / (C * 2.0)
     return ear
 
-def gaze_ratio(frame, grey, eye):
+def isolate(frame, grey, eye, threshold):
     '''
-    Computes the gaze ratio between the white pixels in the left and right half of the eye.
+    Isolates an eye from a face frame.
 
     Args:
         frame: Frame to create eye mask from.
         grey: Grey frame to create eye mask from.
         eye: Array of 6 integers specifying the facial landmark coordinates for a given eye.
+        threshold: Threshold value to create binary image.
     
     Returns:
-        The gaze ratio as a float.
+        An eye frame.
     '''
     eye_region = np.array([(eye[0][0], eye[0][1]),
                            (eye[1][0], eye[1][1]),
@@ -95,7 +94,22 @@ def gaze_ratio(frame, grey, eye):
 
     # Process image
     grey_eye = eye_mask[min_y: max_y, min_x: max_x]
-    _, processed_eye = cv2.threshold(grey_eye, 70, 255, cv2.THRESH_BINARY)
+    _, processed_eye = cv2.threshold(grey_eye, threshold, 255, cv2.THRESH_BINARY)
+
+    return processed_eye
+
+def gaze_ratio(processed_eye):
+    '''
+    Computes the gaze ratio between the white pixels in the left and right half of the eye.
+
+    Args:
+        processed_eye: An eye frame returned from the isolate() method.
+    
+    Returns:
+        The gaze ratio as a float.
+    '''
+
+    # Find height and width
     height, width = processed_eye.shape
 
     # Count white pixels on left and right side of eye
@@ -146,9 +160,14 @@ def main():
     COUNT = 0
     TOTAL = 0
 
+    # Default theshold values
+    EAR_THRESH = 0.25
+    BINAR_THRESH = 45
+
     cap = cv2.VideoCapture(0)  # Camera capture
     cv2.namedWindow("Webcam capture")
-    cv2.createTrackbar("Threshold", "Webcam capture", 25, 40, nothing)
+    cv2.createTrackbar("EAR threshold", "Webcam capture", 25, 40, nothing)
+    cv2.createTrackbar("Binarise threshold", "Webcam capture", 45, 100, nothing)
 
     while True:
         _, frame = cap.read()  # _ is a throwaway variable
@@ -157,7 +176,9 @@ def main():
 
         # Trackbar to change eye aspect ratio threshold value
         # OpenCV only allows integer values so everything is multiplied by 100
-        EYE_AR_THRESH = cv2.getTrackbarPos("Threshold", "Webcam capture") / 100.0
+        EAR_THRESH = cv2.getTrackbarPos("EAR threshold", "Webcam capture") / 100.0
+        # Trackbar to change binarise threshold value
+        BINAR_THRESH = cv2.getTrackbarPos("Binarise threshold", "Webcam capture")
 
         faces = detector(grey)
         for face in faces:
@@ -176,23 +197,29 @@ def main():
             # Find total eye aspect ratio as an average of both eyes
             ear = (left_ear + right_ear) / 2.0
 
-            # Draw eyes
+            # Draw detected eye outlines onto face frame
             draw_eye(frame, left_eye)
             draw_eye(frame, right_eye)
 
+            # Isolate eyes and show binary images in separate windows
+            left_eye_frame = isolate(frame, grey, left_eye, BINAR_THRESH)
+            right_eye_frame = isolate(frame, grey, right_eye, BINAR_THRESH)
+            cv2.imshow("left eye", left_eye_frame)
+            cv2.imshow("right eye", right_eye_frame)
+
             # Compute gaze ratio for both eyes
-            left_gr = gaze_ratio(frame, grey, left_eye)
-            right_gr = gaze_ratio(frame, grey, right_eye)
+            left_gr = gaze_ratio(left_eye_frame)
+            right_gr = gaze_ratio(right_eye_frame)
 
             # Find total gaze ratio as an average of both eyes
             gr = (left_gr + right_gr) / 2.0
 
             # Increment blink frame counter if eye aspect ratio is below threshold
-            if ear < EYE_AR_THRESH:
+            if ear < EAR_THRESH:
                 COUNT += 1
             else:
                 # Increment total number of blinks if eyes closed for a sufficient number of frames
-                if COUNT >= EYE_AR_CONSEC_FRAMES:
+                if COUNT >= EAR_CONSEC_FRAMES:
                     TOTAL += 1
                     cv2.putText(frame, "BLINK", (30, 100), font, 2, (0, 0, 255), 3)
                 
