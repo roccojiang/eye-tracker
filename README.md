@@ -14,4 +14,4 @@ A project by Fabian Yiu and Rocco Jiang that may or may not work in the end.
 ## Guide
 To run:
 
-`python3 tracker.py`
+`python3 main.py`
