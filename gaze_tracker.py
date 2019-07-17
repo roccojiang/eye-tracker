@@ -20,13 +20,26 @@ class GazeTracker(object):
         (self.r_start, self.r_end) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
         # Initialise frame counter and total number of blinks
-        self.COUNT = 0
-        self.TOTAL = 0
+        self.ear_frame_count = 0
+        self.total_blinks = 0
     
     def refresh(self, frame):
+        '''
+        Refreshes the frame.
+
+        Args:
+            frame (numpy.ndarray): The frame to analyse.
+        '''
         self.frame = frame
     
     def track(self, ear_thresh, binar_thresh):
+        '''
+        Tracks user gaze and shows information on the frame.
+
+        Args:
+            ear_thresh (float): Eye aspect ratio threshold value.
+            binar_thresh (int): Binarise threshold value.
+        '''
 
         grey = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
 
@@ -70,11 +83,11 @@ class GazeTracker(object):
 
             # Increment blink frame counter if eye aspect ratio is below threshold
             if ear < ear_thresh:
-                self.COUNT += 1
+                self.ear_frame_count += 1
             else:
                 # Increment total number of blinks if eyes closed for a sufficient number of frames
-                if self.COUNT >= self.EAR_CONSEC_FRAMES:
-                    self.TOTAL += 1
+                if self.ear_frame_count >= self.EAR_CONSEC_FRAMES:
+                    self.total_blinks += 1
                     cv2.putText(self.frame, "BLINK", (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
                 
                 # Gaze detection
@@ -85,10 +98,10 @@ class GazeTracker(object):
                 else:
                     cv2.putText(self.frame, "LEFT", (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
 
-                self.COUNT = 0  # Reset blink frame counter
+                self.ear_frame_count = 0  # Reset blink frame counter
             
             # Display total number of blinks, eye aspect ratio, and gaze ratio
-            cv2.putText(self.frame, f"Blinks: {self.TOTAL}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(self.frame, f"Blinks: {self.total_blinks}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             cv2.putText(self.frame, f"EAR: {ear:.2f}", (300, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             cv2.putText(self.frame, f"Gaze ratio: {gr:.2f}", (300, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
