@@ -1,22 +1,10 @@
-/*
-  Adapted from:
-  
-  L298N Motor Demonstration
-  L298N-Motor-Demo.ino
-  Demonstrates functions of L298N Motor Controller
-  
-  DroneBot Workshop 2017
-  http://dronebotworkshop.com
-*/
-  
-
-// Motor A (steering)
+// Motor A (drive)
 
 int enA = 9;
 int in1 = 8;
 int in2 = 7;
 
-// Motor B (drive)
+// Motor B (steering)
 
 int enB = 3;
 int in3 = 5;
@@ -35,6 +23,44 @@ void setup()
   pinMode(in3, OUTPUT);
   pinMode(in4, OUTPUT);
 
+  // Initialise serial
+  Serial.begin(9600);
+
+}
+
+void drive(int dir, int spd)
+{
+  // Direction: 1 (forward), 0 (backward)
+  // Speed: ranges from 0~255
+  
+  // Turn on motor A (drive)
+  digitalWrite(in1, dir == 1 ? LOW : HIGH);
+  digitalWrite(in2, dir == 1 ? HIGH : LOW);
+
+  // Set speed
+  analogWrite(enA, spd);
+}
+
+void turn(int dir, int spd)
+{
+  // Direction: 1 (right), 0 (left)
+  // Speed: ranges from 0~255 (recommended max 255)
+
+  // Turn on motor B (steering)
+  digitalWrite(in3, dir == 1 ? LOW : HIGH);
+  digitalWrite(in4, dir == 1 ? HIGH : LOW);
+
+  // Set speed
+  analogWrite(enB, spd);
+}
+
+void stop()
+{
+  // Turn off all motors
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
 }
 
 void demoOne()
@@ -43,23 +69,23 @@ void demoOne()
 
   // This function will run the motors in both directions at a fixed speed
 
-  // Turn on motor A (steering)
+  // Turn on motor A (drive)
 
   digitalWrite(in1, HIGH);
   digitalWrite(in2, LOW);
 
-  // Set speed to 255 out of possible range 0~255
+  // Set speed to 200 out of possible range 0~255
 
-  analogWrite(enA, 255);
+  analogWrite(enA, 200);
 
-  // Turn on motor B (drive)
+  // Turn on motor B (steering)
 
   digitalWrite(in3, HIGH);
   digitalWrite(in4, LOW);
 
-  // Set speed to 200 out of possible range 0~255
+  // Set speed to 255 out of possible range 0~255
 
-  analogWrite(enB, 200);
+  analogWrite(enB, 255);
 
   delay(2000);
 
@@ -130,16 +156,49 @@ void demoTwo()
 
 }
 
+void demoBluetooth()
+{
+  // Quick, dirty code to test out bluetooth communication
+  // Can only be using one motor at a time
+  
+  while (Serial.available())
+  {
+    char input = (char) Serial.read();
+    
+    switch(input)
+    {
+      case 'f':
+        Serial.println("Driving forward");
+        drive(1, 150);
+        break;
+
+      case 'b':
+        Serial.println("Driving backward");
+        drive(0, 150);
+        break;
+
+      case 'r':
+        Serial.println("Turning right");
+        turn(1, 255);
+        break;
+
+      case 'l':
+        Serial.println("Turning left");
+        turn(0, 255);
+        break;
+      
+      case 's':
+        Serial.println("Stopping");
+        stop();
+        break;
+    }
+  }
+}
+
 void loop()
 
 {
 
-  demoOne();
-
-  // delay(1000);
-
-  // demoTwo();
-
-  // delay(1000);
+  demoBluetooth();
 
 }
