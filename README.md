@@ -1,4 +1,4 @@
-# We need to think of a name for this project
+# A Fabian and Rocco Production
 **The eye-controlled RC car that no one ever asked for**
 
 A project by Fabian Yiu and Rocco Jiang that may or may not work in the end.
@@ -15,3 +15,6 @@ A project by Fabian Yiu and Rocco Jiang that may or may not work in the end.
 To run:
 
 `python3 main.py`
+
+## Schematic
+![Schematic](schematic/schematic_img.png)
