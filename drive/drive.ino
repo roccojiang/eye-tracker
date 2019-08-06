@@ -164,41 +164,39 @@ void demoBluetooth()
   while (Serial.available())
   {
     char input = (char) Serial.read();
-    
-    switch(input)
+
+    if (input == 'f')
     {
-      case 'f':
-        Serial.println("Driving forward");
-        drive(1, 150);
-        break;
-
-      case 'b':
-        Serial.println("Driving backward");
-        drive(0, 150);
-        break;
-
-      case 'r':
-        Serial.println("Turning right");
-        turn(1, 255);
-        break;
-
-      case 'l':
-        Serial.println("Turning left");
-        turn(0, 255);
-        break;
-      
-      case 's':
-        Serial.println("Stopping");
-        stop();
-        break;
+      Serial.println("Driving forward");
+      drive(1, 150);
     }
+    if (input == 'b')
+    {
+      Serial.println("Driving backward");
+      drive(0, 150);
+    }
+    if (input == 'r')
+    {
+      Serial.println("Turning right");
+      turn(1, 255);
+    }
+    if (input == 'l')
+    {
+      Serial.println("Turning left");
+      turn(0, 255);
+    }
+    if (input == 's')
+    {
+      Serial.println("Stopping");
+      stop();
+    }
+    
   }
 }
 
 void loop()
 
 {
-
   demoBluetooth();
 
 }
