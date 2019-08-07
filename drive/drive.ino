@@ -39,6 +39,11 @@ void drive(int dir, int spd)
 
   // Set speed
   analogWrite(enA, spd);
+
+  // Stop after 20 ms
+  delay(20);
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
 }
 
 void turn(int dir, int spd)
@@ -52,6 +57,11 @@ void turn(int dir, int spd)
 
   // Set speed
   analogWrite(enB, spd);
+
+  // Stop after 20 ms
+  delay(20);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
 }
 
 void stop()
@@ -165,27 +175,29 @@ void demoBluetooth()
   {
     char input = (char) Serial.read();
 
-    if (input == 'f')
+    if (input == 'w')
     {
       Serial.println("Driving forward");
-      drive(1, 150);
+      drive(1, 75);
     }
-    if (input == 'b')
+    if (input == 's')
     {
       Serial.println("Driving backward");
-      drive(0, 150);
+      drive(0, 75);
     }
-    if (input == 'r')
+    if (input == 'd')
     {
+      analogWrite(enA, 255);  // Turn drive to maximum
       Serial.println("Turning right");
       turn(1, 255);
     }
-    if (input == 'l')
+    if (input == 'a')
     {
+      analogWrite(enA, 255);  // Turn drive to maximum
       Serial.println("Turning left");
       turn(0, 255);
     }
-    if (input == 's')
+    if (input == ' ')
     {
       Serial.println("Stopping");
       stop();
