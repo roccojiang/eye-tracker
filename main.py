@@ -1,7 +1,7 @@
 # Code adapted from: 
 # https://pysource.com/2019/01/07/eye-detection-gaze-controlled-keyboard-with-python-and-opencv/
 # https://www.pyimagesearch.com/2017/04/24/eye-blink-detection-opencv-python-dlib/
-# https://github.com/rj14ng/eye-tracking-car
+# https://github.com/antoinelame/GazeTracking
 
 import cv2
 import imutils
