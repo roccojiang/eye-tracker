@@ -4,11 +4,11 @@ A Python program that uses a webcam to track your gaze, detecting blinks and gaz
 
 ## Requirements
 - Python 3.7+
+- dlib 19.17+
 - OpenCV 3.4
 - imutils (https://github.com/jrosebr1/imutils)
-- SciPy 0.14+
 - NumPy 1.15.2+
-- dlib 19.17+
+- SciPy 0.14+
 
 ## Guide
 To run:
