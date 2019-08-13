@@ -1,11 +1,10 @@
-# A Fabian and Rocco Production
-**The eye-controlled RC car that no one ever asked for**
+# Eye Tracker
 
-A project by Fabian Yiu and Rocco Jiang that may or may not work in the end.
+A Python program that uses a webcam to track your gaze, detecting blinks and gaze direction (left or right).
 
 ## Requirements
 - Python 3.7+
-- OpenCV 3.4+
+- OpenCV 3.4
 - imutils (https://github.com/jrosebr1/imutils)
 - SciPy 0.14+
 - NumPy 1.15.2+
@@ -15,6 +14,3 @@ A project by Fabian Yiu and Rocco Jiang that may or may not work in the end.
 To run:
 
 `python3 main.py`
-
-## Schematic
-![Schematic](schematic/schematic_img.png)
