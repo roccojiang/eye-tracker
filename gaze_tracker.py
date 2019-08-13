@@ -1,3 +1,4 @@
+import os
 from imutils import face_utils
 import cv2
 import dlib
@@ -13,7 +14,9 @@ class GazeTracker(object):
 
         # Initialise face detector and landmark predictor
         self.detector = dlib.get_frontal_face_detector()
-        self.predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+        cwd = os.path.abspath(os.path.dirname(__file__))
+        model_path = os.path.abspath(os.path.join(cwd, "trained_models/shape_predictor_68_face_landmarks.dat"))
+        self.predictor = dlib.shape_predictor(model_path)
 
         # Indexes for facial landmarks of left and right eyes
         (self.l_start, self.l_end) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
