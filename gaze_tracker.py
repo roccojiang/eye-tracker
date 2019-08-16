@@ -94,7 +94,7 @@ class GazeTracker(object):
                     cv2.putText(self.frame, "BLINK", (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
                 
                 # Gaze detection
-                elif gr <= 0.7:  # Need to ajust threshold
+                elif gr <= 0.7:  # Need to adjust threshold
                     cv2.putText(self.frame, "RIGHT", (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
                 elif 0.7 < gr < 1.5:  # Need to adjust threshold
                     cv2.putText(self.frame, "CENTER", (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
